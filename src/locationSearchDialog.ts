@@ -3,13 +3,7 @@
 // 这样会导致每次输入框变化时搜索地图，浪费地图的搜索配额
 // 因此需要删除原有input, 新建input监听中文输入完成
 
-import {
-    Editor,
-    App,
-    SuggestModal,
-    TFile,
-    Instruction,
-} from 'obsidian';
+import { Editor, App, SuggestModal, TFile, Instruction } from 'obsidian';
 import * as leaflet from 'leaflet';
 
 import MapViewPlugin from 'src/main';
@@ -39,7 +33,7 @@ export class LocationSearchDialog extends SuggestModal<SuggestInfo> {
     private dialogAction: DialogAction;
     private editor: Editor = null;
 
-    private title:string;
+    private title: string;
     // If dialogAction is 'custom', this will launch upon selection
     public customOnSelect: (
         selection: SuggestInfo,
@@ -112,19 +106,17 @@ export class LocationSearchDialog extends SuggestModal<SuggestInfo> {
         })
         this.inputEl.addEventListener('compositionend', () => {
             cnInputFlag = true
-            console.log("中文输入结束", cnInputFlag)
         })
         this.inputEl.addEventListener('input', () => {
             setTimeout(() => {
                 if (cnInputFlag) {
-                    console.log("开始搜索");
                     this.getSuggestions(this.inputEl.value)
                     cnInputFlag = false
                 }
             }, 1);
-        })
+        });
 
-        super.onOpen()
+        super.onOpen();
     }
 
     getSuggestions(query: string) {

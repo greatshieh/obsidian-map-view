@@ -101,7 +101,6 @@ export class GeoSearcher {
                 this.settings.geocodingApiKey.split(',');
             try {
                 // 首先调用高德地图, 配额用完后调用百度地图
-                console.log(query)
                 const { poiResults: placesResults, err } =
                     await amapPlacesSearch(
                         query,
