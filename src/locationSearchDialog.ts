@@ -1,4 +1,15 @@
-import { Editor, App, SuggestModal, TFile, Instruction } from 'obsidian';
+// 原文件是对 obsidian 的 SuggestModal 类进行扩展得到.
+// obsidian的内置方法会自动挂载监听器，并监听 onInput 事件.
+// 这样会导致每次输入框变化时搜索地图，浪费地图的搜索配额
+// 因此需要删除原有input, 新建input监听中文输入完成
+
+import {
+    Editor,
+    App,
+    SuggestModal,
+    TFile,
+    Instruction,
+} from 'obsidian';
 import * as leaflet from 'leaflet';
 
 import MapViewPlugin from 'src/main';
@@ -28,6 +39,7 @@ export class LocationSearchDialog extends SuggestModal<SuggestInfo> {
     private dialogAction: DialogAction;
     private editor: Editor = null;
 
+    private title:string;
     // If dialogAction is 'custom', this will launch upon selection
     public customOnSelect: (
         selection: SuggestInfo,
@@ -56,10 +68,8 @@ export class LocationSearchDialog extends SuggestModal<SuggestInfo> {
         this.editor = editor;
         this.includeResults = includeResults;
         this.hasIcons = hasIcons;
+        this.title = title;
 
-        this.setPlaceholder(
-            title + ': type a place name or paste a string to parse'
-        );
         let instructions = [{ command: 'enter', purpose: 'to use' }];
         if (moreInstructions)
             instructions = instructions.concat(moreInstructions);
@@ -82,6 +92,39 @@ export class LocationSearchDialog extends SuggestModal<SuggestInfo> {
                 }
             }
         });
+    }
+
+    onOpen(): void {
+        // 移除原input
+        this.inputEl.parentElement.firstChild.remove()
+
+        // 新建input
+        this.inputEl = createEl('input', { type: 'text', cls: 'prompt-input'})
+        this.setPlaceholder(
+            this.title + ': type a place name or paste a string to parse'
+        );
+        this.modalEl.querySelector('div.prompt-input-container').insertBefore(this.inputEl, (this as any).ctaEl)
+
+        let cnInputFlag = true
+        // 增加新的监听器
+        this.inputEl.addEventListener('compositionstart', () => {
+            cnInputFlag = false
+        })
+        this.inputEl.addEventListener('compositionend', () => {
+            cnInputFlag = true
+            console.log("中文输入结束", cnInputFlag)
+        })
+        this.inputEl.addEventListener('input', () => {
+            setTimeout(() => {
+                if (cnInputFlag) {
+                    console.log("开始搜索");
+                    this.getSuggestions(this.inputEl.value)
+                    cnInputFlag = false
+                }
+            }, 1);
+        })
+
+        super.onOpen()
     }
 
     getSuggestions(query: string) {

@@ -24,7 +24,6 @@ import * as utils from 'src/utils';
 import * as consts from 'src/consts';
 
 import * as leaflet from 'leaflet';
-
 export class ViewControls {
     private parentElement: HTMLElement;
     private settings: PluginSettings;

@@ -7,7 +7,8 @@ import { PluginSettings } from 'src/settings';
 import { UrlConvertor } from 'src/urlConvertor';
 import { FileMarker } from 'src/markers';
 import * as consts from 'src/consts';
-
+import { cnmapProvider } from './cnmapProvider';
+import { Md5 } from 'ts-md5';
 /**
  * A generic result of a geosearch
  */
@@ -22,6 +23,7 @@ export class GeoSearchResult {
 export class GeoSearcher {
     private searchProvider:
         | geosearch.OpenStreetMapProvider
+        | cnmapProvider
         | geosearch.GoogleProvider = null;
     private settings: PluginSettings;
     private urlConvertor: UrlConvertor;
@@ -35,6 +37,8 @@ export class GeoSearcher {
             this.searchProvider = new geosearch.GoogleProvider({
                 apiKey: settings.geocodingApiKey,
             });
+        } else if (settings.searchProvider == 'cnmap') {
+            this.searchProvider = new cnmapProvider();
         }
     }
 
@@ -82,6 +86,45 @@ export class GeoSearcher {
                     'Map View: Google Places search failed: ',
                     e.message
                 );
+            }
+        } else if (
+            this.settings.searchProvider == 'cnmap' &&
+            this.settings.useCNPlaces &&
+            this.settings.geocodingApiKey
+        ) {
+            if (
+                this.settings.searchProvider != 'cnmap' ||
+                !this.settings.useCNPlaces
+            )
+                return [];
+            const [amapApiKey, baidumapApikey] =
+                this.settings.geocodingApiKey.split(',');
+            try {
+                // 首先调用高德地图, 配额用完后调用百度地图
+                console.log(query)
+                const { poiResults: placesResults, err } =
+                    await amapPlacesSearch(
+                        query,
+                        amapApiKey,
+                        searchArea?.getCenter()
+                    );
+                if (err != '') {
+                    // 调用百度地图
+                    const { poiResults: placesResults, err } =
+                        await baiduPlacesSearch(
+                            query,
+                            baidumapApikey,
+                            searchArea?.getCenter()
+                        );
+                }
+                for (const result of placesResults)
+                    results.push({
+                        name: result.name,
+                        location: result.location,
+                        resultType: 'searchResult',
+                    });
+            } catch (e) {
+                console.log('Map View: 地图搜索失败: ', e.message);
             }
         } else {
             const areaSW = searchArea?.getSouthWest() || null;
@@ -152,4 +195,94 @@ export async function googlePlacesSearch(
         }
     }
     return results;
+}
+
+export async function amapPlacesSearch(
+    query: string,
+    apiKey: string,
+    centerOfSearch: leaflet.LatLng | null
+): Promise<{ poiResults: GeoSearchResult[]; err: string }> {
+    const amapParams = {
+        keywords: query,
+        key: apiKey,
+    };
+    const amapUrl =
+        'https://restapi.amap.com/v5/place/text?' +
+        querystring.stringify(amapParams);
+    const amapContent = await request({ url: amapUrl });
+    const jsonContent = JSON.parse(amapContent) as any;
+    let results: GeoSearchResult[] = [];
+    if (jsonContent && jsonContent.info == 'OK' && jsonContent.status == '1') {
+        for (const result of jsonContent.pois) {
+            const location = result.location.split(',');
+            if (location && location.length > 1) {
+                const geolocation = new leaflet.LatLng(
+                    location[1],
+                    location[0]
+                );
+                results.push({
+                    name: result.name,
+                    location: geolocation,
+                    resultType: 'searchResult',
+                } as GeoSearchResult);
+            }
+        }
+    } else if (jsonContent && jsonContent.info != 'OK') {
+        return { poiResults: [], err: jsonContent.info };
+    }
+
+    return { poiResults: results, err: '' };
+}
+
+export async function baiduPlacesSearch(
+    query: string,
+    apiKey: string,
+    centerOfSearch: leaflet.LatLng | null
+): Promise<{ poiResults: GeoSearchResult[]; err: string }> {
+    const baiduParams = {
+        query: query,
+        ak: apiKey,
+        region: '全国',
+        output: 'json',
+        extensions_adcode: false,
+        ret_coordtype: 'gcj02ll',
+        coord_type: 2,
+        photo_show: false,
+    };
+    // 服务地址
+    const host = 'https://api.map.baidu.com';
+
+    // 接口地址
+    let uri = '/place/v2/search?';
+
+    const queryStr = uri + querystring.stringify(baiduParams);
+    let encodedStr = encodeURI(queryStr);
+    const rawStr = encodedStr + 'WPGRp36kwrFfwiogwVBvpCuDMzLKPqnK';
+
+    const sn = Md5.hashStr(rawStr);
+
+    encodedStr = encodedStr + '&sn=' + sn + '&timestamp=' + Date.now();
+
+    const amapContent = await request({ url: host + encodedStr });
+    const jsonContent = JSON.parse(amapContent) as any;
+    let results: GeoSearchResult[] = [];
+    if (jsonContent && jsonContent.message == 'ok' && jsonContent.status == 0) {
+        for (const result of jsonContent.results) {
+            if (result.location) {
+                const geolocation = new leaflet.LatLng(
+                    result.location.lat,
+                    result.location.lng
+                );
+                results.push({
+                    name: result.name,
+                    location: geolocation,
+                    resultType: 'searchResult',
+                } as GeoSearchResult);
+            }
+        }
+    } else if (jsonContent && jsonContent.message != 'ok') {
+        return { poiResults: [], err: jsonContent.message };
+    }
+
+    return { poiResults: results, err: '' };
 }

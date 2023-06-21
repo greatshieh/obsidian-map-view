@@ -57,9 +57,10 @@ export type PluginSettings = {
     urlParsingRules?: UrlParsingRule[];
     mapControls?: MapControls;
     maxClusterRadiusPixels: number;
-    searchProvider?: 'osm' | 'google';
+    searchProvider?: 'osm' | 'google' | 'cnmap';
     geocodingApiKey?: string;
     useGooglePlaces?: boolean;
+    useCNPlaces?: boolean;
     saveHistory?: boolean;
     queryForFollowActiveNote?: string;
     supportRealTimeGeolocation?: boolean;
@@ -120,8 +121,8 @@ export type MarkerIconRule = {
 export const DEFAULT_SETTINGS: PluginSettings = {
     defaultState: {
         name: 'Default',
-        mapZoom: 1.0,
-        mapCenter: new LatLng(40.44694705960048, -180.70312500000003),
+        mapZoom: 11.0,
+        mapCenter: new LatLng(39.909187, 116.397455),
         query: '',
         chosenMapSource: 0,
     },
@@ -199,7 +200,14 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     maxClusterRadiusPixels: 20,
     searchProvider: 'osm',
     useGooglePlaces: false,
+    useCNPlaces: false,
     mapSources: [
+        {
+            name: '高德地图',
+            urlLight:
+                'http://wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7',
+            preset: true,
+        },
         {
             name: 'CartoDB',
             urlLight:
@@ -217,7 +225,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     geoHelperFilePath: '',
     handleGeolinksInNotes: true,
     showGeolinkPreview: false,
-    zoomOnGeolinkPreview: 10,
+    zoomOnGeolinkPreview: 16,
 };
 
 export function convertLegacyMarkerIcons(settings: PluginSettings): boolean {
