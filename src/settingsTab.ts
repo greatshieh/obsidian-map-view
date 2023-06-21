@@ -59,24 +59,29 @@ export class SettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName('Geocoding search provider')
             .setDesc(
-                'The service used for searching for geolocations. To use Google, see details in the plugin documentation.'
+                'The service used for searching for geolocations. To use Google or 高德地图/百度地图, see details in the plugin documentation.'
             )
             .addDropdown((component) => {
                 component
                     .addOption('osm', 'OpenStreetMap')
+                    .addOption('cnmap', '国内地图服务(需要 API key)')
                     .addOption('google', 'Google (API key required)')
                     .setValue(
                         this.plugin.settings.searchProvider ||
                             DEFAULT_SETTINGS.searchProvider
                     )
-                    .onChange(async (value: 'osm' | 'google') => {
+                    .onChange(async (value: 'osm' | 'google' | 'cnmap') => {
                         this.plugin.settings.searchProvider = value;
                         await this.plugin.saveSettings();
                         this.refreshPluginOnHide = true;
                         apiKeyControl.settingEl.style.display =
-                            value === 'google' ? '' : 'none';
+                            value === 'osm' ? 'none' : '';
                         googlePlacesControl.settingEl.style.display =
                             this.plugin.settings.searchProvider === 'google'
+                                ? ''
+                                : 'none';
+                        cnmapPlacesControl.settingEl.style.display =
+                            this.plugin.settings.searchProvider === 'cnmap'
                                 ? ''
                                 : 'none';
                     });
@@ -85,7 +90,7 @@ export class SettingsTab extends PluginSettingTab {
         apiKeyControl = new Setting(containerEl)
             .setName('Gecoding API key')
             .setDesc(
-                'If using Google as the geocoding search provider, paste the API key here. See the plugin documentation for more details. Changes are applied after restart.'
+                '使用国内地图服务时, 需要输入高德 API key 和 百度密钥, 中间用逗号隔开'
             )
             .addText((component) => {
                 component
@@ -119,12 +124,27 @@ export class SettingsTab extends PluginSettingTab {
                     });
             });
 
+        let cnmapPlacesControl = new Setting(containerEl)
+            .setName('使用国内地图')
+            .setDesc('使用国内地图（高德/百度）位置搜索服务.')
+            .addToggle((component) => {
+                component
+                    .setValue(
+                        this.plugin.settings.useCNPlaces ??
+                            DEFAULT_SETTINGS.useCNPlaces
+                    )
+                    .onChange(async (value) => {
+                        this.plugin.settings.useCNPlaces = value;
+                        await this.plugin.saveSettings();
+                    });
+            });
         // Display the API key control only if the search provider requires it
         apiKeyControl.settingEl.style.display =
-            this.plugin.settings.searchProvider === 'google' ? '' : 'none';
+            this.plugin.settings.searchProvider === 'osm' ? 'none' : '';
         googlePlacesControl.settingEl.style.display =
             this.plugin.settings.searchProvider === 'google' ? '' : 'none';
-
+        cnmapPlacesControl.settingEl.style.display =
+            this.plugin.settings.searchProvider === 'cnmap' ? '' : 'none';
         new Setting(containerEl)
             .setName('New note name format')
             .setDesc(
@@ -888,6 +908,7 @@ export class SettingsTab extends PluginSettingTab {
                 .addOption('latLng', '(lat)(lng)')
                 .addOption('lngLat', '(lng)(lat)')
                 .addOption('googlePlace', '(google-place)')
+                .addOption('cnmapPlace', '(cnmap-place)')
                 .setValue(setting.contentType ?? 'latLng')
                 .onChange(async (value) => {
                     setting.contentType = value as UrlParsingContentType;
