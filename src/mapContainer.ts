@@ -350,7 +350,10 @@ export class MapContainer {
                     ? consts.MAX_ZOOM
                     : maxNativeZoom,
                 maxNativeZoom: maxNativeZoom,
-                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                subdomains:
+                    chosenMapSource.name === DEFAULT_SETTINGS.mapSources[0].name
+                        ? ['1', '2', '3', '4']
+                        : ['mt0', 'mt1', 'mt2', 'mt3'],
                 attribution: attribution,
                 className: neededClassName,
             });
