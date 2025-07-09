@@ -47,9 +47,11 @@ export type PluginSettings = {
     urlParsingRules: UrlParsingRule[];
     mapControls: MapControls;
     maxClusterRadiusPixels: number;
-    searchProvider: 'osm' | 'google';
+    searchProvider: 'osm' | 'google' | 'cn';
     searchDelayMs: number;
     geocodingApiKey: string;
+    amapApiKey: string;
+    baiduAPikey: string;
     useGooglePlaces: boolean;
     saveHistory: boolean;
     queryForFollowActiveNote: string;
@@ -231,6 +233,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     searchProvider: 'osm',
     searchDelayMs: 250,
     geocodingApiKey: '',
+    amapApiKey: '',
+    baiduAPikey: '',
     useGooglePlaces: false,
     mapSources: [
         {

@@ -167,7 +167,13 @@ export class LocationSearchDialog extends SuggestModal<SuggestInfo> {
     }
 
     async getSearchResultsWithDelay(query: string) {
-        if (query === this.lastSearch || query.length < 3) return;
+        const chineseReg = new RegExp('^[\u4E00-\u9FFF]+$');
+        const isChinese = chineseReg.test(query);
+        if (
+            query === this.lastSearch ||
+            (isChinese ? query.length < 2 : query.length < 3)
+        )
+            return;
         const timestamp = Date.now();
         this.lastSearchTime = timestamp;
         const Sleep = (ms: number) =>

@@ -55,6 +55,8 @@ export class SettingsTab extends PluginSettingTab {
             });
 
         let apiKeyControl: Setting = null;
+        let aMapApiKeyControl: Setting = null;
+        let baiduApiKeyControl: Setting = null;
         new Setting(containerEl)
             .setName('Geocoding search provider')
             .setDesc(
@@ -64,16 +66,21 @@ export class SettingsTab extends PluginSettingTab {
                 component
                     .addOption('osm', 'OpenStreetMap')
                     .addOption('google', 'Google (API key required)')
+                    .addOption('cn', 'Amap & BaiduMAP (API key required)')
                     .setValue(
                         this.plugin.settings.searchProvider ||
                             DEFAULT_SETTINGS.searchProvider,
                     )
-                    .onChange(async (value: 'osm' | 'google') => {
+                    .onChange(async (value: 'osm' | 'google' | 'cn') => {
                         this.plugin.settings.searchProvider = value;
                         await this.plugin.saveSettings();
                         this.refreshPluginOnHide = true;
                         apiKeyControl.settingEl.style.display =
                             value === 'google' ? '' : 'none';
+                        aMapApiKeyControl.settingEl.style.display =
+                            value === 'cn' ? '' : 'none';
+                        baiduApiKeyControl.settingEl.style.display =
+                            value === 'cn' ? '' : 'none';
                         googlePlacesControl.settingEl.style.display =
                             this.plugin.settings.searchProvider === 'google'
                                 ? ''
@@ -101,6 +108,45 @@ export class SettingsTab extends PluginSettingTab {
                     ? ''
                     : 'red';
             });
+
+        aMapApiKeyControl = new Setting(containerEl)
+            .setName('高德地图 API key')
+            .setDesc('使用高德地图 API key 进行搜索。')
+            .addText((component) => {
+                component
+                    .setValue(this.plugin.settings.amapApiKey)
+                    .onChange(async (value) => {
+                        this.plugin.settings.amapApiKey = value;
+                        await this.plugin.saveSettings();
+                        component.inputEl.style.borderColor = value
+                            ? ''
+                            : 'red';
+                    });
+                component.inputEl.style.borderColor = this.plugin.settings
+                    .amapApiKey
+                    ? ''
+                    : 'red';
+            });
+
+        baiduApiKeyControl = new Setting(containerEl)
+            .setName('百度地图 API key')
+            .setDesc('使用百度地图 API key 进行搜索。')
+            .addText((component) => {
+                component
+                    .setValue(this.plugin.settings.baiduAPikey)
+                    .onChange(async (value) => {
+                        this.plugin.settings.baiduAPikey = value;
+                        await this.plugin.saveSettings();
+                        component.inputEl.style.borderColor = value
+                            ? ''
+                            : 'red';
+                    });
+                component.inputEl.style.borderColor = this.plugin.settings
+                    .baiduAPikey
+                    ? ''
+                    : 'red';
+            });
+
         let googlePlacesControl = new Setting(containerEl)
             .setName('Use Google Places for searches')
             .setDesc(
@@ -121,6 +167,10 @@ export class SettingsTab extends PluginSettingTab {
         // Display the API key control only if the search provider requires it
         apiKeyControl.settingEl.style.display =
             this.plugin.settings.searchProvider === 'google' ? '' : 'none';
+        aMapApiKeyControl.settingEl.style.display =
+            this.plugin.settings.searchProvider === 'cn' ? '' : 'none';
+        baiduApiKeyControl.settingEl.style.display =
+            this.plugin.settings.searchProvider === 'cn' ? '' : 'none';
         googlePlacesControl.settingEl.style.display =
             this.plugin.settings.searchProvider === 'google' ? '' : 'none';
         new Setting(containerEl)
